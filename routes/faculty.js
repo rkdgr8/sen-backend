@@ -12,5 +12,7 @@ if (process.env.NODE_ENV !== "dev")
 router.post("/add", facultyController.addFaculty);
 router.post("/update", facultyController.updateFaculty);
 router.delete("/:facultyId", facultyController.deleteFaculty);
+router.put( "/addSubscriber", facultyController.addSubscriber);
+router.get( "/verify/:token" , facultyController.verify);
 
 module.exports = router;

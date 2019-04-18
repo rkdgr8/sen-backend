@@ -20,8 +20,8 @@ app.use(express.json()); // Parsing requests as in JSON format
 //Use CORS
 app.use(cors());
 
-// Connect to database
-//mongoose.connect(process.env.DB_ADDRESS, { useNewUrlParser: true });
+Connect to database
+mongoose.connect(process.env.DB_ADDRESS, { useNewUrlParser: true });
 mongoose.connect("mongodb://localhost/facultyDir", { useNewUrlParser: true });
 mongoose.set("debug", true);
 const conn = mongoose.connection;
@@ -29,6 +29,12 @@ conn.on("error", console.error.bind(console, "MongoDB Error: "));
 conn.on("connected", () => {
   console.log("Connected To Database...");
 });
+
+// mongoose.connect('mongodb://127.0.0.1:27017/SEN-BACKEND', {
+//     useNewUrlParser: true,
+//     useCreateIndex: true,
+//     useFindAndModify: false
+// })
 
 //API Routes
 app.use("/api/faculty", facultyApi);

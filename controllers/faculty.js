@@ -1,5 +1,62 @@
 const Faculty = require("../models/faculty");
 const College = require("../models/colleges")
+const { smtpTransport } = require("../mail.js")
+const Subscriber = require("../models/subscribers.js")
+const Token = require("../models/tokens.js")
+const crypto = require('crypto')
+
+exports.addSubscriber = (req, res) => {
+  //console.log('hello')
+  Subscriber.create(req.body).then((subs) => {
+    //console.log('hello')
+    const passstring = subs._id.toString()
+   // console.log(passstring)
+    const randomstring = crypto.randomBytes(16).toString('hex')
+    
+  
+    //console.log(randomstring)
+    Token.create({ _subscriberid: passstring,_facultyid:subs.fac, token:randomstring}).then((token) => {
+     // console.log('hello again')
+      smtpTransport.sendMail({
+        from: '201601150@daiict.ac.in',
+        to: subs.email ,
+        subject: 'Confirmation mail for subscription of faculty ',
+        text: 'Please verify your account by clicking on the following link  ' + ' localhost:5000/api/faculty/verify/' + token.token
+      })
+    }).catch((err) => {
+      res.status(500).send('Something went wrong later')
+    })
+  }).catch((error) => {
+    res.status(500).send('something went wrong earlier')
+  })
+}
+
+exports.verify = (req,res) => {
+
+  const receivedtoken = req.params.token
+  console.log(receivedtoken)
+  console.log(typeof(receivedtoken))
+  Token.findOne({token:receivedtoken}).then( (token)=> {
+   // console.log(token)
+      const subid = token._subscriberid
+      const facid = token._facultyid
+
+      Subscriber.findOneAndUpdate({_id:subid,fac:facid} , {$set:{isVerified:true}}).then( (sub)=> {
+        res.send(sub)
+
+        Token.deleteOne({_id:token._id}).catch((err) => {
+          res.status(500).send("Token couldn't be deleted")
+        })
+
+      }).catch( (err) => {
+        res.status(500).send('something went wrong later')
+      })
+    }).catch( (err)=> {
+        res.status(500).send('something went wrong earlier')
+      })
+
+
+}
 
 
 exports.getFaculty = (req, res) => {
@@ -50,8 +107,22 @@ exports.addFaculty = (req, res) => {
 };
 
 exports.updateFaculty = (req, res) => {
-  Faculty.findOneAndUpdate({_id:req.body._id}, req.body ).then( (doc) => {
-    res.status(200).send("Saved successfully")
+  Faculty.findOneAndUpdate({_id:req.body._id}, req.body ).then( (fac) => {
+    Subscriber.find( {}).then( (subs) => {
+      var len = subs.length
+      for(var i=0;i<len;i++)
+        {
+          if(subs[i].isVerified)
+            {
+              smtpTransport.sendMail({
+                from: '201601150@daiict.ac.in',
+                to: subs[i].email ,
+                subject: 'Update of faculty ',
+                text: 'New update'
+              })
+            }
+          }
+    })
   })
   .catch ( (err) =>{
     res.status(200).send("Something went wrong")
