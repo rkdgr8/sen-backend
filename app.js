@@ -20,7 +20,7 @@ app.use(express.json()); // Parsing requests as in JSON format
 //Use CORS
 app.use(cors());
 
-Connect to database
+//Connect to database
 mongoose.connect(process.env.DB_ADDRESS, { useNewUrlParser: true });
 mongoose.connect("mongodb://localhost/facultyDir", { useNewUrlParser: true });
 mongoose.set("debug", true);
