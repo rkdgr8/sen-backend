@@ -1,6 +1,6 @@
 # SEN Backend
 
-### To run the server
+## For Development
 
 - You need Node & Yarn to run this application. Download them here - [Node](https://nodejs.org/), [Yarn](https://yarnpkg.com).
 
@@ -10,10 +10,11 @@
 
   ```bash
   PORT=5000
+  TEST_DB_ADDRESS="<Your Test DB Address here>"
   DB_ADDRESS="<Your DB Address here>"
   ```
 
-- Run the following commands in the directory of sen-backend:
+- To run the server run the following commands in the directory of sen-backend:
 
   - For Windows
 
@@ -28,3 +29,10 @@
     yarn
     yarn dev-unix
     ```
+
+- To run tests:
+
+  ```bash
+  yarn
+  yarn test
+  ```

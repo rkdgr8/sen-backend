@@ -1,6 +1,21 @@
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/administrators");
 
+exports.isAuthenticated = (req, res, next) => {
+  const token = req.headers["x-access-token"];
+  if (!token) {
+    console.log("Missing Token");
+    res.status(500).send("Token Not Provided.");
+  } else {
+    jwt.verify(token, process.env.SIGNIN_SECRET, function(err, decoded) {
+      if (err) {
+        console.log("Error Decoding Token.");
+        res.status(500).send("Error Decoding Token.");
+      } else next();
+    });
+  }
+};
+
 exports.signIn = (req, res) => {
   Admin.findOne({ username: req.body.username })
     .exec()
@@ -17,7 +32,9 @@ exports.signIn = (req, res) => {
           process.env.SIGNIN_SECRET,
           { expiresIn: "1h" }
         );
-        res.status(200).send({ message: "Successfully signed in.", token });
+        res
+          .status(200)
+          .send({ message: "Successfully signed in.", token, admin });
       }
     });
 };

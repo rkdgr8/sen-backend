@@ -1,3 +1,4 @@
+
 const Faculty = require("../models/faculty");
 const College = require("../models/colleges")
 const { smtpTransport } = require("../mail.js")
@@ -59,81 +60,112 @@ exports.verify = (req,res) => {
 }
 
 
+
 exports.getFaculty = (req, res) => {
-  
   const _id = req.params.facultyId;
-  Faculty.findById( {_id} ).then((fac)=> {
-    if(!fac)
-    {
-      res.status(204).send(fac);
-    }
-    console.log(fac._id)
-    res.status(200).send(fac);
-  }).catch( (err) => {
-    res.status(500).send("Something went wrong")
-  })
+  Faculty.findById({ _id })
+    .then(fac => {
+      if (!fac) {
+        res.status(404).send();
+      }
+      console.log(fac._id);
+      res.send(fac);
+    })
+    .catch(err => {
+      res.status(500).send('Something went wrong');
+    });
 };
 
 exports.searchFaculty = (req, res) => {
-  console.log(req.params.query);
-  const searchString = req.params.query;
-  Faculty.find({$text: {$search: searchString}}).then( (fac) => {
-    res.status(200).send(fac)
-  }).catch ( (err) =>  {
-    res.status(500).send("Search failed")
-  })
+  var searchString = req.params.query;
+  Faculty.find({ $text: { $search: searchString } })
+    .then(fac => {
+      res.send(fac);
+    })
+    .catch(err => {
+      res.status(500).send('Search failed');
+    });
 };
 
 exports.addFaculty = (req, res) => {
- // console.log(req.body.faculty)
-  Faculty.create((req.body.faculty))
-  .then( (fac)=> {
-     const match = fac._id.toString()
-     const addthis = {
-      id: match
-    }
-
-    College.findOneAndUpdate({_id:fac.college.id}, {$push: {faculty:addthis} }).then( (done) =>{
-        res.status(200).send("Successfully added faculty")
-      }).catch( (err) => {
-      console.log(err)
-      res.status(500).send("Something went wrong here")
+  Faculty.create(req.body)
+    .then(fac => {
+      const match = fac._id.toString();
+      const addthis = {
+        name: fac.name,
+        id: match
+      };
+      College.findOneAndUpdate(
+        { _id: fac.college.id },
+        { $push: { faculty: addthis } }
+      )
+        .then(done => {
+          res.status(200).send('Successfully added faculty.');
+        })
+        .catch(err => {
+          console.log(err);
+          res.status(500).send('Something went wrong.');
+        });
     })
-  })
-  .catch( (err)=> {
-    console.log(err);
-    res.status(500).send("Something went wrong!")
-  })
+    .catch(err => {
+      console.log(err);
+      res.status(500).send('Something went wrong.');
+    });
 };
 
 exports.updateFaculty = (req, res) => {
-  Faculty.findOneAndUpdate({_id:req.body._id}, req.body ).then( (fac) => {
-    Subscriber.find( {}).then( (subs) => {
-      var len = subs.length
-      for(var i=0;i<len;i++)
+ Faculty.findByIdAndUpdate(req.body.id, req.body.faculty)
+    .then(faculty => {
+      College.update(
+        { _id: faculty.college.id, 'faculty.id': faculty._id },
         {
-          if(subs[i].isVerified)
+          $set: { 'faculty.$.name': faculty.name }
+        }
+      ).then(() => {
+        Subscriber.find( {}).then( (subs) => {
+          var len = subs.length
+          for(var i=0;i<len;i++)
             {
-              smtpTransport.sendMail({
-                from: '201601150@daiict.ac.in',
-                to: subs[i].email ,
-                subject: 'Update of faculty ',
-                text: 'New update'
-              })
-            }
-          }
+              if(subs[i].isVerified)
+                {
+                  smtpTransport.sendMail({
+                    from: '201601150@daiict.ac.in',
+                    to: subs[i].email ,
+                    subject: 'Update of faculty ',
+                    text: 'New update'
+                  })
+                }
+              }
+        }).catch( (err) => {
+          res.send(500).status("Faculty updates mail not send to receipients ")
+        })
+      });
     })
-  })
-  .catch ( (err) =>{
-    res.status(200).send("Something went wrong")
-  })
+    .catch(err => {
+      console.log(err);
+      res.status(500).send('Something went wrong.');
+    });
+
 };
 
 exports.deleteFaculty = (req, res) => {
-  const _id = req.params.facultyId
-  Faculty.deleteOne({_id}).then( () => {
-    res.status(200).send("Faculty deleted")
-  }).catch( (e)=> {
-    res.status(500).send("Something went wrong")
-  })
+  const id = req.params.facultyId;
+  Faculty.findOneAndDelete({ _id: id })
+    .exec()
+    .then(faculty => {
+      College.findByIdAndUpdate(faculty.college.id, {
+        $pull: { faculty: { id: id } }
+      })
+        .then(() => {
+          res.status(200).send('Successfully deleted faculty.');
+        })
+        .catch(err => {
+          console.log(err);
+          res.status(500).send('Something went wrong.');
+        });
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).send('Something went wrong.');
+    });
 };
